@@ -1,5 +1,5 @@
 Name:           python-tokenizers
-Version:        0.21.4
+Version:        0.22.1
 Release:        %autorelease
 Summary:        Implementation of today's most used tokenizers
 
