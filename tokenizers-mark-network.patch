@@ -1,0 +1,342 @@
+diff --git a/bindings/python/pytest.ini b/bindings/python/pytest.ini
+new file mode 100644
+index 00000000..8f8fc06a
+--- /dev/null
++++ b/bindings/python/pytest.ini
+@@ -0,0 +1,4 @@
++[pytest]
++markers =
++   network: mark a test that requires network access.
++   asyncio: mark a test that uses async io.
+diff --git a/bindings/python/tests/bindings/test_encoding.py b/bindings/python/tests/bindings/test_encoding.py
+index 80b8cc2b..90ac3634 100644
+--- a/bindings/python/tests/bindings/test_encoding.py
++++ b/bindings/python/tests/bindings/test_encoding.py
+@@ -5,6 +5,7 @@ from tokenizers import BertWordPieceTokenizer
+ from ..utils import bert_files, data_dir
+ 
+ 
++@pytest.mark.network
+ class TestEncoding:
+     @pytest.fixture(scope="class")
+     def encodings(self, bert_files):
+diff --git a/bindings/python/tests/bindings/test_models.py b/bindings/python/tests/bindings/test_models.py
+index 06369838..23839a3e 100644
+--- a/bindings/python/tests/bindings/test_models.py
++++ b/bindings/python/tests/bindings/test_models.py
+@@ -7,6 +7,7 @@ from ..utils import bert_files, data_dir, roberta_files
+ 
+ 
+ class TestBPE:
++    @pytest.mark.network
+     def test_instantiate(self, roberta_files):
+         assert isinstance(BPE(), Model)
+         assert isinstance(BPE(), BPE)
+@@ -75,6 +76,7 @@ class TestBPE:
+ 
+ 
+ class TestWordPiece:
++    @pytest.mark.network
+     def test_instantiate(self, bert_files):
+         assert isinstance(WordPiece(), Model)
+         assert isinstance(WordPiece(), WordPiece)
+@@ -112,6 +114,7 @@ class TestWordPiece:
+ 
+ 
+ class TestWordLevel:
++    @pytest.mark.network
+     def test_instantiate(self, roberta_files):
+         assert isinstance(WordLevel(), Model)
+         assert isinstance(WordLevel(), WordLevel)
+diff --git a/bindings/python/tests/bindings/test_processors.py b/bindings/python/tests/bindings/test_processors.py
+index 3038d869..4e98bcc1 100644
+--- a/bindings/python/tests/bindings/test_processors.py
++++ b/bindings/python/tests/bindings/test_processors.py
+@@ -70,6 +70,7 @@ class TestByteLevelProcessing:
+         assert isinstance(ByteLevel(), ByteLevel)
+         assert isinstance(pickle.loads(pickle.dumps(ByteLevel())), ByteLevel)
+ 
++    @pytest.mark.network
+     def test_processing(self, roberta_files):
+         # Deprecated in 0.9
+         with pytest.deprecated_call():
+diff --git a/bindings/python/tests/bindings/test_tokenizer.py b/bindings/python/tests/bindings/test_tokenizer.py
+index 28f6b38d..fed7c81b 100644
+--- a/bindings/python/tests/bindings/test_tokenizer.py
++++ b/bindings/python/tests/bindings/test_tokenizer.py
+@@ -154,6 +154,7 @@ class TestTokenizer:
+         output = tokenizer.encode_batch(["my name is john", ("my name is john", "pair")])
+         assert len(output) == 2
+ 
++    @pytest.mark.network
+     def test_encode_formats(self, bert_files):
+         with pytest.deprecated_call():
+             tokenizer = BertWordPieceTokenizer(bert_files["vocab"])
+@@ -286,6 +287,7 @@ class TestTokenizer:
+         with pytest.raises(TypeError, match="InputSequence must be Union[List[str]"):
+             tokenizer.encode(["My", "name", "is", "John"], "pair", is_pretokenized=True)
+ 
++    @pytest.mark.network
+     def test_encode_add_special_tokens(self, roberta_files):
+         with pytest.deprecated_call():
+             tokenizer = Tokenizer(BPE(roberta_files["vocab"], roberta_files["merges"]))
+@@ -376,6 +378,7 @@ class TestTokenizer:
+         stream = DecodeStream(ids=[0, 1, 2])
+         assert stream.step(tokenizer, 3) == " john"
+ 
++    @pytest.mark.network
+     def test_decode_stream_fallback(self):
+         tokenizer = Tokenizer.from_pretrained("gpt2")
+         # tokenizer.decode([255]) fails because its a fallback
+@@ -408,6 +411,7 @@ class TestTokenizer:
+         out = stream.step(tokenizer, [109])
+         assert out == "อั"
+ 
++    @pytest.mark.network
+     def test_decode_skip_special_tokens(self):
+         tokenizer = Tokenizer.from_pretrained("hf-internal-testing/Llama-3.1-8B-Instruct")
+ 
+@@ -557,11 +561,13 @@ class TestTokenizer:
+         multiprocessing_with_parallelism(tokenizer, False)
+         multiprocessing_with_parallelism(tokenizer, True)
+ 
++    @pytest.mark.network
+     def test_from_pretrained(self):
+         tokenizer = Tokenizer.from_pretrained("bert-base-cased")
+         output = tokenizer.encode("Hey there dear friend!", add_special_tokens=False)
+         assert output.tokens == ["Hey", "there", "dear", "friend", "!"]
+ 
++    @pytest.mark.network
+     def test_from_pretrained_revision(self):
+         tokenizer = Tokenizer.from_pretrained("anthony/tokenizers-test")
+         output = tokenizer.encode("Hey there dear friend!", add_special_tokens=False)
+@@ -597,6 +603,7 @@ class TestTokenizer:
+         assert output.ids == [1, 10, 2, 3, 4, 5, 10, 6, 7, 8, 9]
+         assert output.tokens == ["A", " ", "sen", "te", "n", "ce", " ", "<0xF0>", "<0x9F>", "<0xA4>", "<0x97>"]
+ 
++    @pytest.mark.network
+     def test_encode_special_tokens(self):
+         tokenizer = Tokenizer.from_pretrained("t5-base")
+         tokenizer.add_tokens(["<eot>"])
+@@ -628,6 +635,7 @@ class TestTokenizer:
+         output = tokenizer.encode("Hey there<end_of_text> dear<eot>friend!", add_special_tokens=False)
+         assert output.tokens == ["▁Hey", "▁there", "<", "end", "_", "of_text>", "▁dear", "<eot>", "▁friend", "!"]
+ 
++    @pytest.mark.network
+     def test_splitting(self):
+         tokenizer = Tokenizer.from_pretrained("hf-internal-testing/llama-new-metaspace")
+         tokenizer.pre_tokenizer.split = False
+@@ -724,6 +732,7 @@ class TestTokenizerRepr:
+         )
+ 
+ 
++@pytest.mark.network
+ class TestAsyncTokenizer:
+     """Tests for async methods of the Tokenizer class."""
+ 
+diff --git a/bindings/python/tests/bindings/test_trainers.py b/bindings/python/tests/bindings/test_trainers.py
+index 38b59944..40d4acb0 100644
+--- a/bindings/python/tests/bindings/test_trainers.py
++++ b/bindings/python/tests/bindings/test_trainers.py
+@@ -150,6 +150,7 @@ class TestWordLevelTrainer:
+ 
+ 
+ class TestUnigram:
++    @pytest.mark.network
+     def test_train(self, train_files):
+         tokenizer = SentencePieceUnigramTokenizer()
+         tokenizer.train(train_files["small"], show_progress=False)
+@@ -158,6 +159,7 @@ class TestUnigram:
+         tokenizer.save(filename)
+         os.remove(filename)
+ 
++    @pytest.mark.network
+     def test_train_parallelism_with_custom_pretokenizer(self, train_files):
+         class GoodCustomPretok:
+             def split(self, n, normalized):
+@@ -184,6 +186,7 @@ class TestUnigram:
+ 
+     def test_train_with_special_tokens(self):
+         filename = "tests/data/dummy-unigram-special_tokens-train.txt"
++        os.makedirs("tests/data", exist_ok=True)
+         with open(filename, "w") as f:
+             f.write(
+                 """
+@@ -287,6 +290,7 @@ class TestUnigram:
+         trainer.initial_alphabet = ["d", "z"]
+         assert sorted(trainer.initial_alphabet) == ["d", "z"]
+ 
++    @pytest.mark.network
+     def test_continuing_prefix_trainer_mismatch(self, train_files):
+         UNK = "[UNK]"
+         special_tokens = [UNK]
+diff --git a/bindings/python/tests/documentation/test_pipeline.py b/bindings/python/tests/documentation/test_pipeline.py
+index 25300ff6..a94f9cc6 100644
+--- a/bindings/python/tests/documentation/test_pipeline.py
++++ b/bindings/python/tests/documentation/test_pipeline.py
+@@ -1,3 +1,4 @@
++import pytest
+ from tokenizers import Tokenizer
+ 
+ from ..utils import data_dir, doc_pipeline_bert_tokenizer, doc_wiki_tokenizer
+@@ -12,6 +13,7 @@ def print(*args, **kwargs):
+ 
+ 
+ class TestPipeline:
++    @pytest.mark.network
+     def test_pipeline(self, doc_wiki_tokenizer):
+         try:
+             # START reload_tokenizer
+@@ -143,6 +145,7 @@ class TestPipeline:
+         bert_tokenizer.save("data/bert-wiki.json")
+         # END bert_train_tokenizer
+ 
++    @pytest.mark.network
+     def test_bert_example(self, doc_pipeline_bert_tokenizer):
+         try:
+             bert_tokenizer = Tokenizer.from_file("data/bert-wiki.json")
+diff --git a/bindings/python/tests/documentation/test_quicktour.py b/bindings/python/tests/documentation/test_quicktour.py
+index a98b0c12..59d5ccee 100644
+--- a/bindings/python/tests/documentation/test_quicktour.py
++++ b/bindings/python/tests/documentation/test_quicktour.py
+@@ -1,3 +1,4 @@
++import pytest
+ from tokenizers import Tokenizer
+ from ..utils import data_dir, doc_wiki_tokenizer
+ 
+@@ -45,6 +46,7 @@ class TestQuicktour:
+         # END init_pretok
+         return tokenizer, trainer
+ 
++    @pytest.mark.network
+     def test_quicktour(self, doc_wiki_tokenizer):
+         def print(*args, **kwargs):
+             pass
+diff --git a/bindings/python/tests/implementations/test_bert_wordpiece.py b/bindings/python/tests/implementations/test_bert_wordpiece.py
+index 4e7c29cf..a7fefc1d 100644
+--- a/bindings/python/tests/implementations/test_bert_wordpiece.py
++++ b/bindings/python/tests/implementations/test_bert_wordpiece.py
+@@ -1,9 +1,11 @@
++import pytest
+ from tokenizers import BertWordPieceTokenizer
+ 
+ from ..utils import bert_files, data_dir, multiprocessing_with_parallelism
+ 
+ 
+ class TestBertWordPieceTokenizer:
++    @pytest.mark.network
+     def test_basic_encode(self, bert_files):
+         tokenizer = BertWordPieceTokenizer.from_file(bert_files["vocab"])
+ 
+@@ -39,6 +41,7 @@ class TestBertWordPieceTokenizer:
+         assert output.offsets == [(0, 2), (3, 7), (8, 10), (11, 15), (0, 4)]
+         assert output.type_ids == [0, 0, 0, 0, 1]
+ 
++    @pytest.mark.network
+     def test_multiprocessing_with_parallelism(self, bert_files):
+         tokenizer = BertWordPieceTokenizer.from_file(bert_files["vocab"])
+         multiprocessing_with_parallelism(tokenizer, False)
+diff --git a/bindings/python/tests/implementations/test_byte_level_bpe.py b/bindings/python/tests/implementations/test_byte_level_bpe.py
+index 441aded7..51410ac8 100644
+--- a/bindings/python/tests/implementations/test_byte_level_bpe.py
++++ b/bindings/python/tests/implementations/test_byte_level_bpe.py
+@@ -1,9 +1,11 @@
++import pytest
+ from tokenizers import ByteLevelBPETokenizer
+ 
+ from ..utils import data_dir, multiprocessing_with_parallelism, roberta_files
+ 
+ 
+ class TestByteLevelBPE:
++    @pytest.mark.network
+     def test_basic_encode(self, roberta_files):
+         tokenizer = ByteLevelBPETokenizer.from_file(roberta_files["vocab"], roberta_files["merges"])
+         output = tokenizer.encode("The quick brown fox jumps over the lazy dog")
+@@ -32,6 +34,7 @@ class TestByteLevelBPE:
+             (39, 43),
+         ]
+ 
++    @pytest.mark.network
+     def test_add_prefix_space(self, roberta_files):
+         tokenizer = ByteLevelBPETokenizer.from_file(
+             roberta_files["vocab"], roberta_files["merges"], add_prefix_space=True
+@@ -62,6 +65,7 @@ class TestByteLevelBPE:
+             (39, 43),
+         ]
+ 
++    @pytest.mark.network
+     def test_lowerspace(self, roberta_files):
+         tokenizer = ByteLevelBPETokenizer.from_file(
+             roberta_files["vocab"],
+@@ -84,6 +88,7 @@ class TestByteLevelBPE:
+             "Ġdog",
+         ]
+ 
++    @pytest.mark.network
+     def test_multiprocessing_with_parallelism(self, roberta_files):
+         tokenizer = ByteLevelBPETokenizer.from_file(roberta_files["vocab"], roberta_files["merges"])
+         multiprocessing_with_parallelism(tokenizer, False)
+diff --git a/bindings/python/tests/implementations/test_char_bpe.py b/bindings/python/tests/implementations/test_char_bpe.py
+index 3ce5cf9a..3449e8b2 100644
+--- a/bindings/python/tests/implementations/test_char_bpe.py
++++ b/bindings/python/tests/implementations/test_char_bpe.py
+@@ -1,9 +1,11 @@
++import pytest
+ from tokenizers import CharBPETokenizer
+ 
+ from ..utils import data_dir, multiprocessing_with_parallelism, openai_files
+ 
+ 
+ class TestCharBPETokenizer:
++    @pytest.mark.network
+     def test_basic_encode(self, openai_files):
+         tokenizer = CharBPETokenizer.from_file(openai_files["vocab"], openai_files["merges"])
+ 
+@@ -31,6 +33,7 @@ class TestCharBPETokenizer:
+         ]
+         assert output.type_ids == [0, 0, 0, 0, 0, 0, 0, 1]
+ 
++    @pytest.mark.network
+     def test_lowercase(self, openai_files):
+         tokenizer = CharBPETokenizer.from_file(openai_files["vocab"], openai_files["merges"], lowercase=True)
+         output = tokenizer.encode("My name is John", "pair", add_special_tokens=False)
+@@ -39,11 +42,13 @@ class TestCharBPETokenizer:
+         assert output.offsets == [(0, 2), (3, 7), (8, 10), (11, 15), (0, 4)]
+         assert output.type_ids == [0, 0, 0, 0, 1]
+ 
++    @pytest.mark.network
+     def test_decoding(self, openai_files):
+         tokenizer = CharBPETokenizer.from_file(openai_files["vocab"], openai_files["merges"], lowercase=True)
+         decoded = tokenizer.decode(tokenizer.encode("my name is john").ids)
+         assert decoded == "my name is john"
+ 
++    @pytest.mark.network
+     def test_multiprocessing_with_parallelism(self, openai_files):
+         tokenizer = CharBPETokenizer.from_file(openai_files["vocab"], openai_files["merges"])
+         multiprocessing_with_parallelism(tokenizer, False)
+diff --git a/bindings/python/tests/test_serialization.py b/bindings/python/tests/test_serialization.py
+index 9da2c3e2..c9060f4a 100644
+--- a/bindings/python/tests/test_serialization.py
++++ b/bindings/python/tests/test_serialization.py
+@@ -1,5 +1,6 @@
+ import json
+ import os
++import pytest
+ import unittest
+ 
+ import tqdm
+@@ -11,12 +12,14 @@ from .utils import albert_base, data_dir
+ 
+ 
+ class TestSerialization:
++    @pytest.mark.network
+     def test_full_serialization_albert(self, albert_base):
+         # Check we can read this file.
+         # This used to fail because of BufReader that would fail because the
+         # file exceeds the buffer capacity
+         Tokenizer.from_file(albert_base)
+ 
++    @pytest.mark.network
+     def test_str_big(self, albert_base):
+         tokenizer = Tokenizer.from_file(albert_base)
+         assert (
