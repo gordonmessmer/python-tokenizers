@@ -19,7 +19,7 @@ SourceLicense:  Apache-2.0
 # MIT
 # MIT OR Apache-2.0
 # Unlicense OR MIT
-%define license_expression %{shrink:
+%global license_expression %{shrink:
 Unicode-DFS-2016 AND
 Apache-2.0 AND
 (Apache-2.0 OR BSL-1.0) AND
