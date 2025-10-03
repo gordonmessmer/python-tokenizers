@@ -1,3 +1,5 @@
+%bcond_with network
+
 Name:           python-tokenizers
 Version:        0.22.1
 Release:        %autorelease
@@ -99,7 +101,9 @@ cd bindings/python
 #cargo_test
 # only run the tests, not the benches
 %pytest -s -v ./tests/ \
+%if %{without network}
         -m "not network"
+%endif
 
 
 %files -n python3-tokenizers -f %{pyproject_files}
